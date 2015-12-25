@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="zepto/zepto-core.js"></script>
+    <script src="zepto.populate.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+<form action="http://localhost/test/submit.php" method="post" id="test">
+
+    <input type="text" name="c21InsuranList[0][name]" value=""><br />
+    <input type="text" name="c21InsuranList[0][c21paymentCategory]" value=""><br />
+    <input type="text" name="c21InsuranList[1][name]" value=""><br />
+    <input type="text" name="c21InsuranList[1][c21paymentCategory]" value=""><br />
+    checkbox1<br />
+    <input type="checkbox" name="checkbox1" value="1" /><br />
+    <input type="checkbox" name="checkbox2" value="2" /><br />
+    <input type="checkbox" name="checkbox3" value="3" /><br />
+    radio<br />
+    <input type="radio" name="radio" value="1" /><br />
+    <input type="radio" name="radio" value="2" /><br />
+    <input type="radio" name="radio" value="3" /><br />
+    fruit[]<br />
+    <input type="text" name="fruit[]" value="" /><br />
+    <input type="text" name="fruit[]" value="" /><br />
+    <input type="text" name="fruit[]" value="" /><br />
+    Utensils<br />
+    <input type="text" name="Utensils[0][name]" value="" /><br />
+    <input type="text" name="Utensils[0][EnglishName]" value="" /><br />
+    <input type="text" name="Utensils[][name]" value="" /><br />
+    <input type="text" name="Utensils[][name]" value="" /><br />
+
+    <textarea name="textarea" id="textarea" cols="30" rows="10">A word in textarea</textarea><br />
+    select<br />
+    <select name="select" id="select">
+        <option value="1">1</option>
+        <option value="2">2</option>
+    </select><br />
+
+    <fieldset name="category">
+        <input type="text" name="clothes[color][]" value="" />
+        <input type="text" name="clothes[color][]" value="" />
+        <input type="text" name="clothes[color][]" value="" />
+    </fieldset>
+    <input type="submit">
+</form>
+</body>
+</html>
