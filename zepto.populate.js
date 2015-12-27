@@ -7,53 +7,102 @@
  */
 $.fn.populate = function (obj, options) {
 
+    function likeArr(value) {
+        return typeof value.length == "number";
+    }
+    function isNumeric(value) {
+        return value - parseFloat( value ) >= 0;
+    }
+    function isElement(value) {
+        return !!value && value.nodeType === 1;
+    }
+    function isInput(el) {
+        return isElement(el) && [
+                "checkbox",
+                "date",
+                "datetime",
+                "datetime-local",
+                "email",
+                "file",
+                "hidden",
+                "image",
+                "month",
+                "number",
+                "password",
+                "radio",
+                "range",
+                "text",
+                "time",
+                "url",
+                "week",
+
+                "select-multiple",
+                "select-one",
+                "textarea"
+            ].indexOf(el.type || "") != -1;
+    }
+    function isUndefined(value) {
+        return value === void 0;
+    }
+
+    //var elements = $("#test").prop("elements");
 
     // ------------------------------------------------------------------------------------------
     // JSON conversion function
 
     // convert
-    function parseJSON(obj, path) {
-        // prepare
-        path = path || '';
+    /*function parseJSONByEl(elements) {
+        var keyName,
+            el,
+            nodeList,
+            objElements = {},
+            boolIsInput,
+            boolLikeArr;
+        for(keyName in elements) {
+            if ( !elements.hasOwnProperty(keyName) || isNumeric(keyName) ) continue;
+            //console.log(typeof keyName, keyName, elements[keyName]);
+            el = elements[keyName];
+            boolIsInput = isInput(el);
+            boolLikeArr = likeArr(el);
 
-        // iteration (objects / arrays)
-        if (obj == undefined) {
-        }
-        else if (obj.constructor == Object) {
-            for (var prop in obj) {
-                var name = path + (path == '' ? prop : '[' + prop + ']');
-                parseJSON(obj[prop], name);
+            if ( !boolIsInput && !boolLikeArr) continue;
+
+            if ( boolLikeArr ) {
+                nodeList = el;
+                var arrValues = [];
+                $.each(nodeList, function (idx, el) {
+                    arrValues.push($(el).val());
+                });
+                objElements[keyName] = arrValues;
+            } else {
+                objElements[keyName] = $(el).val();
             }
         }
 
-        else if (obj.constructor == Array) {
-            for (var i = 0; i < obj.length; i++) {
-                var index = options.useIndices ? i : '';
-                index = options.phpNaming ? '[' + index + ']' : index;
-                var name = path + index;
-                parseJSON(obj[i], name);
+        return objElements;
+    }*/
+    /**
+     * 将直接将常规JSON Object转成表单name作为键
+     * @param {Object} data
+     * @returns {Object}
+     */
+    function parseJSON(data) {
+        var strParam = $.param(data||{}).replace(/\+/g, '%20');
+        var arrParam = strParam.split("&"),
+            obj = {};
+        arrParam.forEach(function (strKeyVal) {
+            var arrKeyVal = strKeyVal.split("=").map(decodeURIComponent);
+            var objVal = obj[ arrKeyVal[0] ];
+            if ( obj.hasOwnProperty(arrKeyVal[0]) ) {
+                Array.isArray(objVal)
+                    ? objVal.push(arrKeyVal[1])
+                    : (obj[ arrKeyVal[0] ] = [objVal, arrKeyVal[1]]);
+            } else {
+                obj[ arrKeyVal[0] ] = arrKeyVal[1];
             }
-        }
-
-        // assignment (values)
-        else {
-            // if the element name hasn't yet been defined, create it as a single value
-            if (arr[path] == undefined) {
-                arr[path] = obj;
-            }
-
-            // if the element name HAS been defined, but it's a single value, convert to an array and add the new value
-            else if (arr[path].constructor != Array) {
-                arr[path] = [arr[path], obj];
-            }
-
-            // if the element name HAS been defined, and is already an array, push the single value on the end of the stack
-            else {
-                arr[path].push(obj);
-            }
-        }
-
-    };
+        });
+        return obj;
+    }
 
 
     // ------------------------------------------------------------------------------------------
@@ -66,9 +115,7 @@ $.fn.populate = function (obj, options) {
     }
 
     function getElementName(name) {
-        if (!options.phpNaming) {
-            name = name.replace(/\[\]$/, '');
-        }
+        if (!options.phpNaming) name = name.replace(/\[]$/, '');
         return name;
     }
 
@@ -81,9 +128,9 @@ $.fn.populate = function (obj, options) {
     }
 
     function populateFormElement(form, name, value) {
-
+        var changedItems = [];
         // check that the named element exists in the form
-        var name = getElementName(name); // handle non-php naming
+        name = getElementName(name); // handle non-php naming
         var element = form[name];
         if (element == undefined) {
             debug('No such element as ' + name);
@@ -100,59 +147,51 @@ $.fn.populate = function (obj, options) {
         // same as any array-elements passed, ie radiobutton or checkox arrays,
         // and the code will just work
 
-        elements = element.type == undefined && element.length ? element : [element];
-
+        var elements = element.type == undefined && element.length ? element : [element];
 
         // populate the element correctly
-
+        var values,
+            j,
+            _value,
+            type,
+            oldVal;
         for (var e = 0; e < elements.length; e++) {
 
-            var element = elements[e];
+            element = elements[e];
+            type = element.type || element.tagName;
+            _value = Array.isArray(value) ? value[e] : value;
+            _value = isUndefined(_value) ? "" : _value;
 
-            switch (element.type || element.tagName) {
-
-                case 'radio':
+            switch (true) {
+                case ['radio', 'checkbox'].indexOf(type) != -1:
                     // use the single value to check the radio button
-                    element.checked = (element.value != '' && value.toString().toLowerCase() == element.value.toLowerCase());
-
-                case 'checkbox':
-                    // depends on the value.
-                    // if it's an array, perform a sub loop
-                    // if it's a value, just do the check
-
-                    var values = value.constructor == Array ? value : [value];
-                    for (var j = 0; j < values.length; j++) {
-                        element.checked |= element.value == values[j];
-                    }
-
-                    //element.checked = (element.value != '' && value.toString().toLowerCase() == element.value.toLowerCase());
+                    oldVal = element.checked;
+                    element.checked = (element.value != '' && _value.toString().toLowerCase() == element.value.toLowerCase());
+                    oldVal != element.checked && changedItems.push(element);
                     break;
 
-                case 'select-multiple':
-                    var values = value.constructor == Array ? value : [value];
+                case type == 'select-multiple':
+                    values = value.constructor == Array ? value : [value];
+                    var boolchanged = false;
                     for (var i = 0; i < element.options.length; i++) {
-                        for (var j = 0; j < values.length; j++) {
+                        for (j = 0; j < values.length; j++) {
+                            oldVal = element.options[i].selected;
                             element.options[i].selected |= element.options[i].value == values[j];
+                            oldVal != element.options[i].selected && (boolchanged = true);
                         }
                     }
+                    boolchanged && changedItems.push(element);
                     break;
 
-                case 'select':
-                case 'select-one':
-                    element.value = value.toString().toLowerCase() || value;
-                    break;
-
-                case 'text':
-                case 'button':
-                case 'textarea':
-                case 'submit':
                 default:
-                    value = value == null ? '' : value;
-                    element.value = value;
+                    oldVal = element.value;
+                    element.value = _value;
+                    oldVal != element.value && changedItems.push(element);
             }
 
         }
 
+        return changedItems;
     }
 
 
@@ -163,16 +202,16 @@ $.fn.populate = function (obj, options) {
     if (obj === undefined) {
         return this;
     }
-    ;
 
     // options
-    var options = $.extend
+    options = $.extend
     (
         {
             phpNaming: true,
             phpIndices: false,
             resetForm: true,
             identifier: 'id',
+            silent: false,
             debug: false
         },
         options
@@ -185,13 +224,12 @@ $.fn.populate = function (obj, options) {
     // ------------------------------------------------------------------------------------------
     // convert hierarchical JSON to flat array
 
-    var arr = [];
-    parseJSON(obj);
+    var objElements = parseJSON(obj);
 
     if (options.debug) {
-        _populate =
+        window._populate =
         {
-            arr: arr,
+            arr: objElements,
             obj: obj,
             elements: []
         }
@@ -199,7 +237,7 @@ $.fn.populate = function (obj, options) {
 
     // ------------------------------------------------------------------------------------------
     // main process function
-
+    var changedItems = [];
     this.each
     (
         function () {
@@ -214,11 +252,14 @@ $.fn.populate = function (obj, options) {
             }
 
             // update elements
-            for (var i in arr) {
-                method(this, i, arr[i]);
+
+            for (var i in objElements) {
+                changedItems = changedItems.concat(method(this, i, objElements[i]));
             }
         }
     );
+
+    !options.silent && $(changedItems).trigger("change");
 
     return this;
 };

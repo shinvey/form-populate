@@ -2,7 +2,7 @@
  * @date 12/25/2015
  * @author <a href="mailto:ex-huxinwei001@pingan.com.cn">Shinvey Hu</a>
  */
-$(document).ready(function () {
+$(document).ready(function ($) {
     var data = {
         "c21InsuranList": [
             {
@@ -14,8 +14,10 @@ $(document).ready(function () {
                 "c21paymentCategory": "456"
             }
         ],
-        "checkbox2": "2",
+        "checkbox1": 1,
+        "checkbox": [2],
         "radio": "2",
+        "mydate": "2015-12-28",
         "fruit": [
             "apple",
             "orange",
@@ -35,6 +37,7 @@ $(document).ready(function () {
         ],
         "textarea": "A word in textarea",
         "select": "2",
+        "select-multiple": [1,2],
         "clothes": {
             "color": [
                 "red",
@@ -44,11 +47,11 @@ $(document).ready(function () {
         }
     };
     var $form = $("#test");
-    $form[0].reset();
+    $form.on("change", "#select", function (e) {
+        console.log(e);
+    });
+    console.dir($form[0].elements);
     $form.populate(data, {debug: true});
+    console.log("_populate", _populate);
 
-    var elements = $("#test").prop("elements");
-    for(var x in elements) {
-        console.log(x,elements[x]);
-    }
 });
