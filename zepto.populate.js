@@ -119,19 +119,19 @@ $.fn.populate = function (obj, options) {
         return name;
     }
 
-    function populateElement(parentElement, name, value) {
+    /*function populateElement(parentElement, name, value) {
         var selector = options.identifier == 'id' ? '#' + name : '[' + options.identifier + '="' + name + '"]';
         var element = $(selector, parentElement);
         value = value.toString();
         value = value == 'null' ? '' : value;
         element.html(value);
-    }
+    }*/
 
     function populateFormElement(form, name, value) {
         var changedItems = [];
         // check that the named element exists in the form
         name = getElementName(name); // handle non-php naming
-        var element = form[name];
+        var element = form.querySelectorAll("[name=\""+name+"\"]");//form[name];
         if (element == undefined) {
             debug('No such element as ' + name);
             return false;
@@ -244,7 +244,8 @@ $.fn.populate = function (obj, options) {
 
             // variables
             var tagName = this.tagName.toLowerCase();
-            var method = tagName == 'form' ? populateFormElement : populateElement;
+            //var method = tagName == 'form' ? populateFormElement : populateElement;
+            var method = populateFormElement;
 
             // reset form?
             if (tagName == 'form' && options.resetForm) {
@@ -254,6 +255,7 @@ $.fn.populate = function (obj, options) {
             // update elements
 
             for (var i in objElements) {
+                if ( !objElements.hasOwnProperty(i) ) continue;
                 changedItems = changedItems.concat(method(this, i, objElements[i]));
             }
         }
