@@ -51,7 +51,11 @@ $(document).ready(function ($) {
         console.log(e);
     });
     console.dir($form[0].elements);
-    $form.populate(data, {debug: true});
+    $form.populate(data, {
+        resetForm: true,
+        silent: false,
+        debug: true
+    });
     console.log("_populate", _populate);
 
 });

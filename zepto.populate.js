@@ -1,112 +1,41 @@
 /**
  * 表单填充
- * @see http://davestewart.io/plugins/jquery/jquery-populate/
- * @param obj
- * @param options
+ * Thanks for the plugin jquery-populate
+ * @see 基于原作{@link http://davestewart.io/plugins/jquery/jquery-populate/|jquery-populate}之上重写核心函数parseJSON，满足了更复杂填充用例
+ * @param {Object} data 将要填充值表单的数据
+ * @param {Object} [options]
+ * @param {Boolean} [options.silent=false]  是否对只改变的元素出发change事件
+ * @param {Object} [options.resetForm=true] 是否重置表单
+ * @param {Object} [options.debug=false] 调试模式可以通过window._populate访问内部处理细节
  * @returns {$}
+ * @example
+ * $form.populate(data, {
+        resetForm: true,
+        silent: false,
+        debug: true
+    });
  */
-$.fn.populate = function (obj, options) {
+$.fn.populate = function (data, options) {
+    if (isUndefined(data)) return this;
 
-    function likeArr(value) {
-        return typeof value.length == "number";
-    }
-    function isNumeric(value) {
-        return value - parseFloat( value ) >= 0;
-    }
-    function isElement(value) {
-        return !!value && value.nodeType === 1;
-    }
-    function isInput(el) {
-        return isElement(el) && [
-                "checkbox",
-                "date",
-                "datetime",
-                "datetime-local",
-                "email",
-                "file",
-                "hidden",
-                "image",
-                "month",
-                "number",
-                "password",
-                "radio",
-                "range",
-                "text",
-                "time",
-                "url",
-                "week",
+    options = $.extend(
+        {
+            resetForm: true,
+            silent: false,
+            debug: false
+        },
+        options
+    );
 
-                "select-multiple",
-                "select-one",
-                "textarea"
-            ].indexOf(el.type || "") != -1;
+    if (options.debug) {
+        window._populate = {
+            elements: []
+        }
     }
+
     function isUndefined(value) {
         return value === void 0;
     }
-
-    //var elements = $("#test").prop("elements");
-
-    // ------------------------------------------------------------------------------------------
-    // JSON conversion function
-
-    // convert
-    /*function parseJSONByEl(elements) {
-        var keyName,
-            el,
-            nodeList,
-            objElements = {},
-            boolIsInput,
-            boolLikeArr;
-        for(keyName in elements) {
-            if ( !elements.hasOwnProperty(keyName) || isNumeric(keyName) ) continue;
-            //console.log(typeof keyName, keyName, elements[keyName]);
-            el = elements[keyName];
-            boolIsInput = isInput(el);
-            boolLikeArr = likeArr(el);
-
-            if ( !boolIsInput && !boolLikeArr) continue;
-
-            if ( boolLikeArr ) {
-                nodeList = el;
-                var arrValues = [];
-                $.each(nodeList, function (idx, el) {
-                    arrValues.push($(el).val());
-                });
-                objElements[keyName] = arrValues;
-            } else {
-                objElements[keyName] = $(el).val();
-            }
-        }
-
-        return objElements;
-    }*/
-    /**
-     * 将直接将常规JSON Object转成表单name作为键
-     * @param {Object} data
-     * @returns {Object}
-     */
-    function parseJSON(data) {
-        var strParam = $.param(data||{}).replace(/\+/g, '%20');
-        var arrParam = strParam.split("&"),
-            obj = {};
-        arrParam.forEach(function (strKeyVal) {
-            var arrKeyVal = strKeyVal.split("=").map(decodeURIComponent);
-            var objVal = obj[ arrKeyVal[0] ];
-            if ( obj.hasOwnProperty(arrKeyVal[0]) ) {
-                Array.isArray(objVal)
-                    ? objVal.push(arrKeyVal[1])
-                    : (obj[ arrKeyVal[0] ] = [objVal, arrKeyVal[1]]);
-            } else {
-                obj[ arrKeyVal[0] ] = arrKeyVal[1];
-            }
-        });
-        return obj;
-    }
-
-
-    // ------------------------------------------------------------------------------------------
-    // population functions
 
     function debug(str) {
         if (window.console && console.log) {
@@ -114,23 +43,35 @@ $.fn.populate = function (obj, options) {
         }
     }
 
-    function getElementName(name) {
-        if (!options.phpNaming) name = name.replace(/\[]$/, '');
-        return name;
-    }
+    /**
+     * 将直接将常规JSON Object转成表单name作为键
+     * @param {Object} data
+     * @returns {Object}
+     */
+    function parseJSON(data) {
+        var strParam = $.param(data||{}).replace(/\+/g, '%20'),
+            arrParam = strParam.split("&"),
+            obj = {};
 
-    /*function populateElement(parentElement, name, value) {
-        var selector = options.identifier == 'id' ? '#' + name : '[' + options.identifier + '="' + name + '"]';
-        var element = $(selector, parentElement);
-        value = value.toString();
-        value = value == 'null' ? '' : value;
-        element.html(value);
-    }*/
+        arrParam.forEach(function (strKeyVal) {
+            var arrKeyVal = strKeyVal.split("=").map(decodeURIComponent),
+                objVal = obj[ arrKeyVal[0] ];
+
+            if ( obj.hasOwnProperty(arrKeyVal[0]) ) {
+                Array.isArray(objVal)
+                    ? objVal.push(arrKeyVal[1])
+                    : (obj[ arrKeyVal[0] ] = [objVal, arrKeyVal[1]]);
+
+            } else {
+                obj[ arrKeyVal[0] ] = arrKeyVal[1];
+            }
+        });
+        return obj;
+    }
 
     function populateFormElement(form, name, value) {
         var changedItems = [];
         // check that the named element exists in the form
-        name = getElementName(name); // handle non-php naming
         var element = form.querySelectorAll("[name=\""+name+"\"]");//form[name];
         if (element == undefined) {
             debug('No such element as ' + name);
@@ -172,15 +113,15 @@ $.fn.populate = function (obj, options) {
 
                 case type == 'select-multiple':
                     values = value.constructor == Array ? value : [value];
-                    var boolchanged = false;
+                    var boolChanged = false;
                     for (var i = 0; i < element.options.length; i++) {
                         for (j = 0; j < values.length; j++) {
                             oldVal = element.options[i].selected;
                             element.options[i].selected |= element.options[i].value == values[j];
-                            oldVal != element.options[i].selected && (boolchanged = true);
+                            oldVal != element.options[i].selected && (boolChanged = true);
                         }
                     }
-                    boolchanged && changedItems.push(element);
+                    boolChanged && changedItems.push(element);
                     break;
 
                 default:
@@ -194,74 +135,31 @@ $.fn.populate = function (obj, options) {
         return changedItems;
     }
 
+    var objElements = parseJSON(data);
+    var changedItems = [];
+    this.each(function () {
+        var tagName = this.tagName.toLowerCase();
+        var method = populateFormElement;
 
-    // ------------------------------------------------------------------------------------------
-    // options & setup
+        // reset form?
+        if (tagName == 'form' && options.resetForm) {
+            this.reset();
+        }
 
-    // exit if no data object supplied
-    if (obj === undefined) {
-        return this;
-    }
-
-    // options
-    options = $.extend
-    (
-        {
-            phpNaming: true,
-            phpIndices: false,
-            resetForm: true,
-            identifier: 'id',
-            silent: false,
-            debug: false
-        },
-        options
-    );
-
-    if (options.phpIndices) {
-        options.phpNaming = true;
-    }
-
-    // ------------------------------------------------------------------------------------------
-    // convert hierarchical JSON to flat array
-
-    var objElements = parseJSON(obj);
+        // update elements
+        for (var i in objElements) {
+            if ( !objElements.hasOwnProperty(i) ) continue;
+            changedItems = changedItems.concat(method(this, i, objElements[i]));
+        }
+    });
+    !options.silent && $(changedItems).trigger("change");
 
     if (options.debug) {
-        window._populate =
-        {
-            arr: objElements,
-            obj: obj,
-            elements: []
-        }
+        $.extend(window._populate, {
+            objElements: objElements,
+            data: data
+        });
     }
-
-    // ------------------------------------------------------------------------------------------
-    // main process function
-    var changedItems = [];
-    this.each
-    (
-        function () {
-
-            // variables
-            var tagName = this.tagName.toLowerCase();
-            //var method = tagName == 'form' ? populateFormElement : populateElement;
-            var method = populateFormElement;
-
-            // reset form?
-            if (tagName == 'form' && options.resetForm) {
-                this.reset();
-            }
-
-            // update elements
-
-            for (var i in objElements) {
-                if ( !objElements.hasOwnProperty(i) ) continue;
-                changedItems = changedItems.concat(method(this, i, objElements[i]));
-            }
-        }
-    );
-
-    !options.silent && $(changedItems).trigger("change");
 
     return this;
 };
