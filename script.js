@@ -51,11 +51,13 @@ $(document).ready(function ($) {
         console.log(e);
     });
     console.dir($form[0].elements);
+    //form用例
+    $form.populate(data);
+    //等于如下代码
     $form.populate(data, {
-        resetForm: true,
-        silent: false,
-        debug: true
+        resetForm: true,//重置form默认为true
+        silent: false,//非静默方式表示根据之变动选择性的出发元素change事件
+        debug: false//可用全局变量查看调试信息console.log("_populate", _populate);
     });
-    console.log("_populate", _populate);
-
+    console.log("_populate", window._populate);
 });
