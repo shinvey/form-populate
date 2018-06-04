@@ -1,0 +1,35 @@
+.DS_Store
+
+/.idea
+
+# nodejs
+node_modules
+npm-debug.log
+
+# bower
+bower_components
+
+# sass
+.sass-cache
+
+# sourcemap
+*.map
+
+# resources
+/res
+/assets
+/dist
+/output
+
+# tools
+/tools
+/upgrade
+
+# webstorm ide
+.idea
+
+# zip files
+.zip
+.7z
+
+# doc temprary files
